@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Telegram.Bot.Framework.Abstractions;
@@ -57,21 +58,17 @@ namespace Telegram.Bot.Framework
                     cancellationToken
                 ).ConfigureAwait(false);
 
-                // async mode: doen't work
-                //var tasks = new List<Task>(updates.Length);
+                var sortedUpdates = updates.GroupBy(x => x.Message?.From.Id ?? x.CallbackQuery?.From.Id).ToArray();
 
-                //foreach (var update in updates)
-                //{
-                //    tasks.Add(ProcessUpdateAsync(bot, update));
-                //}
-
-                //await Task.WhenAll(tasks).ConfigureAwait(false);
-
-                foreach (var update in updates)
+                var tasks = sortedUpdates.Select(sortedUpdate => Task.Run(async () =>
                 {
-                    await ProcessUpdateAsync(bot, update).ConfigureAwait(false);
-                }
+                    foreach (var update in sortedUpdate)
+                    {
+                        await ProcessUpdateAsync(bot, update).ConfigureAwait(false);
+                    }
+                }));
 
+                _ = Task.WhenAll(tasks).ConfigureAwait(false);
 
                 if (updates.Length > 0)
                 {
