@@ -17,7 +17,7 @@ namespace Telegram.Bot.Framework
         public static IServiceCollection AddTelegramBot<TBot>(this IServiceCollection services,
             Action<BotOptions> configureOptions) where TBot : IBot
         {
-            services.AddTransient(typeof(TBot))
+            services.AddScoped(typeof(TBot))
                 .Configure(configureOptions);
 
             return AddHandlersToContainer(services);
@@ -33,7 +33,7 @@ namespace Telegram.Bot.Framework
         public static IServiceCollection AddTelegramBot<TBot>(this IServiceCollection services,
             BotOptions options) where TBot : IBot
         {
-            services.AddTransient(typeof(TBot))
+            services.AddScoped(typeof(TBot))
                 .Configure<BotOptions>(i =>
                 {
                     i.Username = options.Username;
