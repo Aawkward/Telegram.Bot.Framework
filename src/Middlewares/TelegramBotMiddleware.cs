@@ -54,7 +54,7 @@ namespace Telegram.Bot.Framework
                     .ConfigureAwait(false);
             }
 
-            _logger.LogDebug("Update payload:\n{Payload}", payload);
+            _logger?.LogDebug("Update payload:\n{Payload}", payload);
 
             Update update = null;
             try
@@ -63,7 +63,7 @@ namespace Telegram.Bot.Framework
             }
             catch (JsonException e)
             {
-                _logger.LogError("Unable to deserialize update payload {Exception}", e.ToString());
+                _logger?.LogError("Unable to deserialize update payload {Exception}", e.ToString());
             }
 
             if (update == null)
@@ -87,7 +87,7 @@ namespace Telegram.Bot.Framework
                 }
                 catch (Exception e)
                 {
-                    _logger.LogError("Error occured while handling update `{UpdateId}`. {Message}", update.Id, e.ToString());
+                    _logger?.LogError("Error occured while handling update `{UpdateId}`. {Message}", update.Id, e.ToString());
                     context.Response.StatusCode = StatusCodes.Status500InternalServerError;
                 }
             }
