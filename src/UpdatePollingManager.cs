@@ -13,7 +13,7 @@ namespace Telegram.Bot.Framework
     /// Update poll manager.
     /// </summary>
     /// <typeparam name="TBot"></typeparam>
-    public class UpdatePollingManager<TBot> : IUpdatePollingManager<TBot>
+    public class UpdatePollingManager<TBot> : IDisposable, IUpdatePollingManager<TBot>
              where TBot : IBot
     {
         private readonly UpdateDelegate _updateDelegate;
@@ -84,5 +84,36 @@ namespace Telegram.Bot.Framework
             var context = new UpdateContext(bot, updateItem, scopeProvider);
             await _updateDelegate(context).ConfigureAwait(false);
         }
+
+        #region IDisposable
+
+        protected bool _disposed;
+
+        /// <inheritdoc/>
+        public virtual void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        private void Dispose(bool disposing)
+        {
+            if (!_disposed)
+            {
+                if (disposing)
+                {
+                    _rootProvider?.Dispose();
+                }
+
+                _disposed = true;
+            }
+        }
+        
+        ~UpdatePollingManager()
+        {
+            Dispose(false);
+        }
+
+        #endregion
     }
 }
