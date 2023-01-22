@@ -2,6 +2,6 @@
 {
     internal static class Timeouts
     {
-        public const int RequestFilterTimeout = 60000;
+        public const int StartAfterTimeout = 2000;
     }
 }

@@ -17,8 +17,11 @@ namespace Telegram.Bot.Framework
         }
 
         public IBot Bot { get; }
+
         public Update Update { get; }
+
         public IServiceProvider Services { get; }
+
         public IDictionary<string, object> Items { get; }
     }
 }

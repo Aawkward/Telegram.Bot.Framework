@@ -1,12 +1,12 @@
-﻿using System;
-using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Telegram.Bot;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
 using Telegram.Bot.Framework;
 using Telegram.Bot.Framework.Abstractions;
+using Telegram.Bot.Framework.Constants;
 
 namespace Microsoft.AspNetCore.Builder
 {
@@ -141,7 +141,7 @@ namespace Microsoft.AspNetCore.Builder
         {
             if (startAfter == default)
             {
-                startAfter = TimeSpan.FromSeconds(2);
+                startAfter = TimeSpan.FromMilliseconds(Timeouts.StartAfterTimeout);
             }
 
             var serviceProvider = new BotServiceProvider(app);

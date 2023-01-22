@@ -3,7 +3,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Telegram.Bot.Framework.Abstractions;
-using Telegram.Bot.Framework.Constants;
 using Telegram.Bot.Requests;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
@@ -49,6 +48,7 @@ namespace Telegram.Bot.Framework
             {
                 Offset = 0,
                 Timeout = 500,
+                Limit = 100,
                 AllowedUpdates = Array.Empty<UpdateType>(),
             };
 
@@ -60,16 +60,12 @@ namespace Telegram.Bot.Framework
                     requestParams.AllowedUpdates)
                     .ConfigureAwait(false);
 
-                var utcNow = DateTime.UtcNow.AddMilliseconds(-Timeouts.RequestFilterTimeout);
-                var newUpdates = updates.Where(x => x.Message?.Date.ToUniversalTime() > utcNow ||
-                    x.CallbackQuery?.Message?.Date.ToUniversalTime() > utcNow).ToArray();
-
                 if (updates.Length > 0)
                 {
                     requestParams.Offset = updates.Max(x => x.Id) + 1;
                 }
 
-                var sortedUpdates = newUpdates.GroupBy(x => x.Message?.From.Id ?? x.CallbackQuery?.From.Id);
+                var sortedUpdates = updates.GroupBy(x => x.Message?.From.Id ?? x.CallbackQuery?.From.Id);
 
                 var tasks = sortedUpdates.Select(sortedUpdate => Task.Run(async () =>
                 {
