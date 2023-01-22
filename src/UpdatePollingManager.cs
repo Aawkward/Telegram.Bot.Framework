@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Telegram.Bot.Framework.Abstractions;
+using Telegram.Bot.Framework.Constants;
 using Telegram.Bot.Requests;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
@@ -53,12 +54,22 @@ namespace Telegram.Bot.Framework
 
             while (!cancellationToken.IsCancellationRequested)
             {
-                var updates = await bot.Client.MakeRequestAsync(
-                    requestParams,
-                    cancellationToken
-                ).ConfigureAwait(false);
+                var updates = await bot.Client.GetUpdatesAsync(requestParams.Offset,
+                    requestParams.Limit,
+                    requestParams.Timeout,
+                    requestParams.AllowedUpdates)
+                    .ConfigureAwait(false);
 
-                var sortedUpdates = updates.GroupBy(x => x.Message?.From.Id ?? x.CallbackQuery?.From.Id).ToArray();
+                var utcNow = DateTime.UtcNow.AddMilliseconds(-Timeouts.RequestFilterTimeout);
+                var newUpdates = updates.Where(x => x.Message?.Date.ToUniversalTime() > utcNow ||
+                    x.CallbackQuery?.Message?.Date.ToUniversalTime() > utcNow).ToArray();
+
+                if (updates.Length > 0)
+                {
+                    requestParams.Offset = updates.Max(x => x.Id) + 1;
+                }
+
+                var sortedUpdates = newUpdates.GroupBy(x => x.Message?.From.Id ?? x.CallbackQuery?.From.Id);
 
                 var tasks = sortedUpdates.Select(sortedUpdate => Task.Run(async () =>
                 {
@@ -69,11 +80,6 @@ namespace Telegram.Bot.Framework
                 }));
 
                 _ = Task.WhenAll(tasks).ConfigureAwait(false);
-
-                if (updates.Length > 0)
-                {
-                    requestParams.Offset = updates[^1].Id + 1;
-                }
             }
 
             cancellationToken.ThrowIfCancellationRequested();
