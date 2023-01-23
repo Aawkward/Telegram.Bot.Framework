@@ -57,7 +57,8 @@ namespace Telegram.Bot.Framework
                 var updates = await bot.Client.GetUpdatesAsync(requestParams.Offset,
                     requestParams.Limit,
                     requestParams.Timeout,
-                    requestParams.AllowedUpdates)
+                    requestParams.AllowedUpdates,
+                    cancellationToken)
                     .ConfigureAwait(false);
 
                 if (updates.Length > 0)
