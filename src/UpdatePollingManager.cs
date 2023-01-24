@@ -81,6 +81,7 @@ namespace Telegram.Bot.Framework
 
             cancellationToken.ThrowIfCancellationRequested();
         }
+
         private async Task ProcessUpdateAsync(TBot bot, Update updateItem)
         {
             using var scopeProvider = _rootProvider.CreateScope();
