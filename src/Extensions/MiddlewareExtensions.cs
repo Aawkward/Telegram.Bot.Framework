@@ -43,7 +43,6 @@ namespace Microsoft.AspNetCore.Builder
             var updateDelegate = botBuilder.Build();
             return app.UseTelegramBotWebhook<TBot>(updateDelegate);
         }
-        
 
         /// <summary>
         /// Add Telegram bot webhook handling functionality to the pipeline.
@@ -149,8 +148,8 @@ namespace Microsoft.AspNetCore.Builder
 
             Task.Run(async () =>
                 {
-                    await Task.Delay(startAfter, cancellationToken);
-                    await updateManager.RunAsync(cancellationToken: cancellationToken);
+                    await Task.Delay(startAfter, cancellationToken).ConfigureAwait(false);
+                    await updateManager.RunAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
                 }, cancellationToken)
                 .ContinueWith(t =>
                 {

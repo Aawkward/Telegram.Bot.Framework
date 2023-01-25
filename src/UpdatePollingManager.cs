@@ -41,7 +41,7 @@ namespace Telegram.Bot.Framework
         {
             var bot = (TBot)_rootProvider.GetService(typeof(TBot));
 
-            await bot.Client.DeleteWebhookAsync(true, cancellationToken)
+            await bot.Client.DeleteWebhookAsync(false, cancellationToken)
                 .ConfigureAwait(false);
 
             requestParams ??= new GetUpdatesRequest
@@ -54,12 +54,10 @@ namespace Telegram.Bot.Framework
 
             while (!cancellationToken.IsCancellationRequested)
             {
-                var updates = await bot.Client.GetUpdatesAsync(requestParams.Offset,
-                    requestParams.Limit,
-                    requestParams.Timeout,
-                    requestParams.AllowedUpdates,
-                    cancellationToken)
-                    .ConfigureAwait(false);
+                var updates = await bot.Client.MakeRequestAsync(
+                    requestParams,
+                    cancellationToken
+                ).ConfigureAwait(false);
 
                 if (updates.Length > 0)
                 {
