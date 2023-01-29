@@ -64,12 +64,16 @@ namespace Telegram.Bot.Framework
                 {
                     requestParams.Offset = updates.Max(x => x.Id) + 1;
 
-                    if (HasEqualsCallbackQueries(updates, _updates))
-                    {
-                        continue;
-                    }
+                    #region Fixture for repeated callback queries
 
-                    _updates = updates;
+                    //if (HasEqualsCallbackQueries(updates, _updates))
+                    //{
+                    //    continue;
+                    //}
+
+                    //_updates = updates;
+
+                    #endregion
 
                     var sortedUpdates = updates.GroupBy(x => x.Message?.From.Id ?? x.CallbackQuery?.From.Id);
 
