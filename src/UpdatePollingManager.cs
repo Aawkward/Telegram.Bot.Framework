@@ -103,14 +103,17 @@ namespace Telegram.Bot.Framework
 
             for (int i = 0; i < first.Length; i++)
             {
-                if (first[i].CallbackQuery?.ChatInstance 
-                    != second[i].CallbackQuery?.ChatInstance) return false;
+                if (first[i].CallbackQuery == null 
+                    || second[i].CallbackQuery == null) return false;
 
-                if (first[i].CallbackQuery?.Data 
-                    != second[i].CallbackQuery?.Data) return false;
+                if (first[i].CallbackQuery.ChatInstance 
+                    != second[i].CallbackQuery.ChatInstance) return false;
 
-                if (first[i].CallbackQuery?.From 
-                    != second[i].CallbackQuery?.From) return false;
+                if (first[i].CallbackQuery.Data 
+                    != second[i].CallbackQuery.Data) return false;
+
+                if (first[i].CallbackQuery.From 
+                    != second[i].CallbackQuery.From) return false;
             }
 
             return true;
