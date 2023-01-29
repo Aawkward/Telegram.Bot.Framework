@@ -18,6 +18,7 @@ namespace Telegram.Bot.Framework
     {
         private readonly UpdateDelegate _updateDelegate;
         private readonly IBotServiceProvider _rootProvider;
+        private Update[] _updates = Array.Empty<Update>();
 
         public UpdatePollingManager(
             IBotBuilder botBuilder,
@@ -62,19 +63,26 @@ namespace Telegram.Bot.Framework
                 if (updates.Length > 0)
                 {
                     requestParams.Offset = updates.Max(x => x.Id) + 1;
-                }
 
-                var sortedUpdates = updates.GroupBy(x => x.Message?.From.Id ?? x.CallbackQuery?.From.Id);
-
-                var tasks = sortedUpdates.Select(sortedUpdate => Task.Run(async () =>
-                {
-                    foreach (var update in sortedUpdate)
+                    if (HasEqualsCallbackQueries(updates, _updates))
                     {
-                        await ProcessUpdateAsync(bot, update).ConfigureAwait(false);
+                        continue;
                     }
-                }));
 
-                _ = Task.WhenAll(tasks).ConfigureAwait(false);
+                    _updates = updates;
+
+                    var sortedUpdates = updates.GroupBy(x => x.Message?.From.Id ?? x.CallbackQuery?.From.Id);
+
+                    var tasks = sortedUpdates.Select(sortedUpdate => Task.Run(async () =>
+                    {
+                        foreach (var update in sortedUpdate)
+                        {
+                            await ProcessUpdateAsync(bot, update).ConfigureAwait(false);
+                        }
+                    }));
+
+                    _ = Task.WhenAll(tasks).ConfigureAwait(false);
+                }
             }
 
             cancellationToken.ThrowIfCancellationRequested();
@@ -86,6 +94,29 @@ namespace Telegram.Bot.Framework
             var context = new UpdateContext(bot, updateItem, scopeProvider);
             await _updateDelegate(context).ConfigureAwait(false);
         }
+
+        #region Static methods
+
+        private static bool HasEqualsCallbackQueries(Update[] first, Update[] second)
+        {
+            if (first.Length != second.Length) return false;
+
+            for (int i = 0; i < first.Length; i++)
+            {
+                if (first[i].CallbackQuery?.ChatInstance 
+                    != second[i].CallbackQuery?.ChatInstance) return false;
+
+                if (first[i].CallbackQuery?.Data 
+                    != second[i].CallbackQuery?.Data) return false;
+
+                if (first[i].CallbackQuery?.From 
+                    != second[i].CallbackQuery?.From) return false;
+            }
+
+            return true;
+        }
+
+        #endregion
 
         #region IDisposable
 
