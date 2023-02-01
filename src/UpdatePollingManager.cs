@@ -54,27 +54,31 @@ namespace Telegram.Bot.Framework
 
             while (!cancellationToken.IsCancellationRequested)
             {
-                var updates = await bot.Client.MakeRequestAsync(
-                    requestParams,
-                    cancellationToken
-                ).ConfigureAwait(false);
-
-                if (updates.Length > 0)
+                try
                 {
-                    requestParams.Offset = updates.Max(x => x.Id) + 1;
+                    var updates = await bot.Client.MakeRequestAsync(
+                        requestParams,
+                        cancellationToken
+                    ).ConfigureAwait(false);
 
-                    var sortedUpdates = updates.GroupBy(x => x.Message?.From.Id ?? x.CallbackQuery?.From.Id);
-
-                    var tasks = sortedUpdates.Select(sortedUpdate => Task.Run(async () =>
+                    if (updates.Length > 0)
                     {
-                        foreach (var update in sortedUpdate)
-                        {
-                            await ProcessUpdateAsync(bot, update).ConfigureAwait(false);
-                        }
-                    }));
+                        requestParams.Offset = updates.Max(x => x.Id) + 1;
 
-                    _ = Task.WhenAll(tasks).ConfigureAwait(false);
+                        var sortedUpdates = updates.GroupBy(x => x.Message?.From.Id ?? x.CallbackQuery?.From.Id);
+
+                        var tasks = sortedUpdates.Select(sortedUpdate => Task.Run(async () =>
+                        {
+                            foreach (var update in sortedUpdate)
+                            {
+                                await ProcessUpdateAsync(bot, update).ConfigureAwait(false);
+                            }
+                        }));
+
+                        _ = Task.WhenAll(tasks).ConfigureAwait(false);
+                    }
                 }
+                catch { }
             }
 
             cancellationToken.ThrowIfCancellationRequested();
