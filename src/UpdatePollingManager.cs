@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -41,14 +42,11 @@ namespace Telegram.Bot.Framework
         {
             var bot = (TBot)_rootProvider.GetService(typeof(TBot));
 
-            await bot.Client.DeleteWebhookAsync(false, cancellationToken)
-                .ConfigureAwait(false);
-
             requestParams ??= new GetUpdatesRequest
             {
-                Offset = 0,
-                Timeout = 500,
-                Limit = 100,
+                Offset = await ThrowOutPendingUpdatesAsync(bot, cancellationToken).ConfigureAwait(false),
+                Timeout = (int)bot.Client.Timeout.TotalSeconds,
+                Limit = 25,
                 AllowedUpdates = Array.Empty<UpdateType>(),
             };
 
@@ -63,7 +61,7 @@ namespace Telegram.Bot.Framework
 
                     if (updates.Length > 0)
                     {
-                        requestParams.Offset = updates.Max(x => x.Id) + 1;
+                        requestParams.Offset = updates[^1].Id + 1;
 
                         var sortedUpdates = updates.GroupBy(x => x.Message?.From.Id ?? x.CallbackQuery?.From.Id);
 
@@ -78,10 +76,34 @@ namespace Telegram.Bot.Framework
                         _ = Task.WhenAll(tasks).ConfigureAwait(false);
                     }
                 }
-                catch { }
+                catch 
+                {
+                    // ignore
+                }
             }
 
             cancellationToken.ThrowIfCancellationRequested();
+        }
+
+        private static async Task<int> ThrowOutPendingUpdatesAsync(TBot bot, 
+            CancellationToken cancellationToken = default)
+        {
+            var request = new GetUpdatesRequest
+            {
+                Limit = 1,
+                Offset = -1,
+                Timeout = 0,
+                AllowedUpdates = Array.Empty<UpdateType>(),
+            };
+            var updates = await bot.Client.MakeRequestAsync(request: request, cancellationToken: cancellationToken)
+                .ConfigureAwait(false);
+
+            if (updates.Length > 0)
+            { 
+                return updates[updates.Length - 1].Id + 1; 
+            }
+
+            return 0;
         }
 
         private async Task ProcessUpdateAsync(TBot bot, Update updateItem)
