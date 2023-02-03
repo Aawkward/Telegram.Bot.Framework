@@ -1,5 +1,5 @@
+using Microsoft.Extensions.Logging;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -19,19 +19,24 @@ namespace Telegram.Bot.Framework
     {
         private readonly UpdateDelegate _updateDelegate;
         private readonly IBotServiceProvider _rootProvider;
+        private readonly ILogger<UpdatePollingManager<TBot>> _logger;
 
         public UpdatePollingManager(
             IBotBuilder botBuilder,
-            IBotServiceProvider rootProvider)
+            IBotServiceProvider rootProvider,
+            ILogger<UpdatePollingManager<TBot>> logger)
         {
+            _logger = logger;
             _updateDelegate = botBuilder.Build();
             _rootProvider = rootProvider;
         }
 
         public UpdatePollingManager(
             UpdateDelegate updateDelegate,
-            IBotServiceProvider rootProvider)
+            IBotServiceProvider rootProvider,
+            ILogger<UpdatePollingManager<TBot>> logger)
         {
+            _logger = logger;
             _updateDelegate = updateDelegate;
             _rootProvider = rootProvider;
         }
@@ -76,9 +81,9 @@ namespace Telegram.Bot.Framework
                         _ = Task.WhenAll(tasks).ConfigureAwait(false);
                     }
                 }
-                catch 
+                catch (Exception ex)
                 {
-                    // ignore
+                    _logger?.LogError("Thrown exception in UpdatePollingManager.RunAsync(): {Exception}", ex.Message);
                 }
             }
 
@@ -100,7 +105,7 @@ namespace Telegram.Bot.Framework
 
             if (updates.Length > 0)
             { 
-                return updates[updates.Length - 1].Id + 1; 
+                return updates[^1].Id + 1; 
             }
 
             return 0;

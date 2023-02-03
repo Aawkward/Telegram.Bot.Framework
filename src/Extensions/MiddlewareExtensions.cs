@@ -144,23 +144,16 @@ namespace Microsoft.AspNetCore.Builder
                 startAfter = TimeSpan.FromMilliseconds(Timeouts.StartAfterTimeout);
             }
 
-            var serviceProvider = new BotServiceProvider(app);
-            var updateManager = new UpdatePollingManager<TBot>(updateDelegate, serviceProvider);
+            using var serviceProvider = new BotServiceProvider(app);
+            var logger = serviceProvider.GetService(typeof(ILogger<UpdatePollingManager<TBot>>)) 
+                as ILogger<UpdatePollingManager<TBot>>;
+            using var updateManager = new UpdatePollingManager<TBot>(updateDelegate, serviceProvider, logger);
 
             Task.Run(async () =>
                 {
                     await Task.Delay(startAfter, cancellationToken).ConfigureAwait(false);
                     await updateManager.RunAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
-                }, cancellationToken)
-                .ContinueWith(t =>
-                {
-                    if (t.Exception == null)
-                        return;
-
-                    var logger = serviceProvider.GetService(typeof(ILogger<IBot>)) as ILogger<IBot>;
-                    logger?.LogError("Thrown exception in UseTelegramBotLongPolling(): {Exception}", t.Exception);
-                    throw t.Exception;
-                }, TaskContinuationOptions.OnlyOnFaulted);
+                }, cancellationToken);
 
             return app;
         }
