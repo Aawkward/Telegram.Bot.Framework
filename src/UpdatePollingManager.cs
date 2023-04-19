@@ -46,10 +46,11 @@ namespace Telegram.Bot.Framework
             CancellationToken cancellationToken = default)
         {
             var bot = (TBot)_rootProvider.GetService(typeof(TBot));
+            var dropPendingMessages = false;
 
             requestParams ??= new GetUpdatesRequest
             {
-                Offset = await ThrowOutPendingUpdatesAsync(bot, cancellationToken).ConfigureAwait(false),
+                Offset = dropPendingMessages ? await ThrowOutPendingUpdatesAsync(bot, cancellationToken).ConfigureAwait(false) : 0,
                 Timeout = (int)bot.Client.Timeout.TotalSeconds,
                 Limit = 25,
                 AllowedUpdates = Array.Empty<UpdateType>(),
