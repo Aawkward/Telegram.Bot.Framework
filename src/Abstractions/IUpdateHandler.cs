@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Threading;
+using System.Threading.Tasks;
 
 namespace Telegram.Bot.Framework.Abstractions
 {
@@ -19,7 +20,8 @@ namespace Telegram.Bot.Framework.Abstractions
         /// </summary>
         /// <param name="context">Instance of <see cref="IUpdateContext"/></param>
         /// <param name="next">Next update delegate</param>
+        /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Result of handling this update</returns>
-        Task HandleAsync(IUpdateContext context, UpdateDelegate next);
+        Task HandleAsync(IUpdateContext context, UpdateDelegate next, CancellationToken cancellationToken = default);
     }
 }
