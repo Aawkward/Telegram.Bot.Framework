@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
@@ -39,7 +40,8 @@ namespace Telegram.Bot.Framework.Abstractions
         /// <param name="context">Update context</param>
         /// <param name="next">Next update delegate</param>
         /// <param name="args">Command arguments</param>
-        protected abstract Task HandleAsync(IUpdateContext context, UpdateDelegate next, string[] args);
+        /// <param name="cancellationToken">CancellationToken</param>
+        protected abstract Task HandleAsync(IUpdateContext context, UpdateDelegate next, string[] args, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Command predicate method.
@@ -83,9 +85,10 @@ namespace Telegram.Bot.Framework.Abstractions
         /// </summary>
         /// <param name="context">Update context</param>
         /// <param name="next">Next update delegate</param>
-        public Task HandleAsync(IUpdateContext context, UpdateDelegate next)
+        /// <param name="cancellationToken">Cancellation token</param>
+        public Task HandleAsync(IUpdateContext context, UpdateDelegate next, CancellationToken cancellationToken = default)
         {
-            return HandleAsync(context, next, ParseCommandArgs(context.Update.Message));
+            return HandleAsync(context, next, ParseCommandArgs(context.Update.Message), cancellationToken);
         }
 
         /// <summary>
