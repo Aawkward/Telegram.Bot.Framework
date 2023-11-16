@@ -84,7 +84,7 @@ namespace Telegram.Bot.Framework
                 }
                 catch (Exception ex)
                 {
-                    _logger?.LogError("Thrown exception in UpdatePollingManager.RunAsync(): {Exception}", ex.Message);
+                    _logger?.LogError("Thrown exception in UpdatePollingManager.RunAsync(): {Exception}", ex.ToString());
                 }
             }
 
