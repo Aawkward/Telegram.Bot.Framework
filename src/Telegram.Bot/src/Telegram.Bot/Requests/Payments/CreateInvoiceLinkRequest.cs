@@ -32,7 +32,7 @@ public class CreateInvoiceLinkRequest : RequestBase<string>
     /// <summary>
     /// Payments provider token, obtained via <a href="https://t.me/botfather">@Botfather</a>
     /// </summary>
-    [JsonProperty(Required = Required.Always)]
+    [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
     public string ProviderToken { get; }
 
     /// <summary>
