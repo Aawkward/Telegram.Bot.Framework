@@ -4891,6 +4891,28 @@ public static partial class TelegramBotClientExtensions
             .ConfigureAwait(false);
 
     /// <summary>
+    /// Method for Telegram Stars refund.
+    /// </summary>
+    /// <remarks>
+    /// <b>Note</b>: The Bot API must receive an answer within 10 seconds after the pre-checkout query was sent.
+    /// </remarks>
+    /// <param name="botClient">An instance of <see cref="ITelegramBotClient"/></param>
+    /// <param name="chatId">User id</param>
+    /// <param name="telegramPaymentChargeId">Unique identifier for transaction</param>
+    /// <param name="cancellationToken">
+    /// A cancellation token that can be used by other objects or threads to receive notice of cancellation
+    /// </param>
+    public static async Task<bool> RefundStarPaymentAsync(
+        this ITelegramBotClient botClient,
+        long chatId,
+        string telegramPaymentChargeId,
+        CancellationToken cancellationToken = default
+    ) =>
+        await botClient.ThrowIfNull()
+            .MakeRequestAsync(request: new RefundStarPaymentRequest(chatId, telegramPaymentChargeId), cancellationToken)
+            .ConfigureAwait(false);
+
+    /// <summary>
     /// Once the user has confirmed their payment and shipping details, the Bot API sends the final confirmation
     /// in the form of an <see cref="Update"/> with the field <see cref="PreCheckoutQuery"/>.
     /// Use this method to respond to indicate failed pre-checkout query
