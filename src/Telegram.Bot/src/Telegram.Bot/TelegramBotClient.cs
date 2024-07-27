@@ -284,43 +284,61 @@ public class TelegramBotClient : ITelegramBotClient
                 exception
             );
         }
+    }
 
-        [MethodImpl(methodImplOptions: MethodImplOptions.AggressiveInlining)]
-        static async Task<HttpResponseMessage> GetResponseAsync(
-            HttpClient httpClient,
-            string fileUri,
-            CancellationToken cancellationToken)
+    [MethodImpl(methodImplOptions: MethodImplOptions.AggressiveInlining)]
+    private static async Task<HttpResponseMessage> GetResponseAsync(
+        HttpClient httpClient,
+        string fileUri,
+        CancellationToken cancellationToken)
+    {
+        HttpResponseMessage? httpResponse = default;
+        Exception? ex = default;
+        const int maxAttempts = 20;
+        const int delay = 250;
+
+        for (int i = 0; i < maxAttempts; i++)
         {
-            HttpResponseMessage? httpResponse;
             try
             {
-                httpResponse = await httpClient
-                    .GetAsync(
-                        requestUri: fileUri,
-                        completionOption: HttpCompletionOption.ResponseHeadersRead,
-                        cancellationToken: cancellationToken
-                    )
+                httpResponse = await httpClient.GetAsync(
+                    requestUri: fileUri,
+                    completionOption: HttpCompletionOption.ResponseHeadersRead,
+                    cancellationToken: cancellationToken)
                     .ConfigureAwait(continueOnCapturedContext: false);
+
+                ex = null;
+                break;
             }
             catch (TaskCanceledException exception)
             {
-                if (cancellationToken.IsCancellationRequested) { throw; }
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    throw;
+                }
 
-                throw new RequestException(
-                    message: "Request timed out",
-                    innerException: exception
-                );
+                ex = new RequestException(
+                    message: "Request timed out", innerException: exception);
+
+                await Task.Delay(delay, cancellationToken)
+                    .ConfigureAwait(continueOnCapturedContext: false);
             }
             catch (Exception exception)
             {
-                throw new RequestException(
-                    message: "Exception during file download",
-                    innerException: exception
-                );
-            }
+                ex = new RequestException(
+                    message: "Exception during file download", innerException: exception);
 
-            return httpResponse;
+                await Task.Delay(delay, cancellationToken)
+                    .ConfigureAwait(continueOnCapturedContext: false);
+            }
         }
+
+        if (ex != null)
+        {
+            throw ex;
+        }
+
+        return httpResponse ?? new HttpResponseMessage(HttpStatusCode.InternalServerError);
     }
 
     #region For testing purposes
