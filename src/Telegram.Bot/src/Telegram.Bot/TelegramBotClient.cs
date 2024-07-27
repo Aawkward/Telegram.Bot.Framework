@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using System.Net;
 using System.Net.Http;
@@ -155,19 +156,29 @@ public class TelegramBotClient : ITelegramBotClient
             .ConfigureAwait(false);
 
         return apiResponse.Result!;
+    }
 
-        [MethodImpl(methodImplOptions: MethodImplOptions.AggressiveInlining)]
-        static async Task<HttpResponseMessage> SendRequestAsync(
-            HttpClient httpClient,
-            HttpRequestMessage httpRequest,
-            CancellationToken cancellationToken)
+    [MethodImpl(methodImplOptions: MethodImplOptions.AggressiveInlining)]
+    private static async Task<HttpResponseMessage> SendRequestAsync(
+        HttpClient httpClient,
+        HttpRequestMessage httpRequest,
+        CancellationToken cancellationToken)
+    {
+        HttpResponseMessage? httpResponse = default;
+        Exception? ex = default;
+        const int maxAttempts = 20;
+        const int delay = 250;
+
+        for (int i = 0; i < maxAttempts; i++)
         {
-            HttpResponseMessage? httpResponse;
             try
             {
                 httpResponse = await httpClient
                     .SendAsync(request: httpRequest, cancellationToken: cancellationToken)
                     .ConfigureAwait(continueOnCapturedContext: false);
+
+                ex = null;
+                break;
             }
             catch (TaskCanceledException exception)
             {
@@ -176,18 +187,28 @@ public class TelegramBotClient : ITelegramBotClient
                     throw;
                 }
 
-                throw new RequestException(message: "Request timed out", innerException: exception);
+                ex = new RequestException(
+                    message: "Request timed out", innerException: exception);
+
+                await Task.Delay(delay, cancellationToken)
+                    .ConfigureAwait(continueOnCapturedContext: false);
             }
             catch (Exception exception)
             {
-                throw new RequestException(
-                    message: "Exception during making request",
-                    innerException: exception
-                );
-            }
+                ex = new RequestException(
+                    message: "Exception during making request", innerException: exception);
 
-            return httpResponse;
+                await Task.Delay(delay, cancellationToken)
+                    .ConfigureAwait(continueOnCapturedContext: false);
+            }
         }
+
+        if (ex != null)
+        {
+            throw ex;
+        }
+
+        return httpResponse ?? new HttpResponseMessage(HttpStatusCode.InternalServerError);
     }
 
     /// <summary>
