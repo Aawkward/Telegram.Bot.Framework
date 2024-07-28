@@ -189,8 +189,7 @@ public class TelegramBotClient : ITelegramBotClient
                 ex = new RequestException(
                     message: "Request timed out", innerException: exception);
 
-                await Task.Delay(delay, cancellationToken)
-                    .ConfigureAwait(continueOnCapturedContext: false);
+                break;
             }
             catch (Exception exception)
             {
@@ -320,8 +319,7 @@ public class TelegramBotClient : ITelegramBotClient
                 ex = new RequestException(
                     message: "Request timed out", innerException: exception);
 
-                await Task.Delay(delay, cancellationToken)
-                    .ConfigureAwait(continueOnCapturedContext: false);
+                break;
             }
             catch (Exception exception)
             {
