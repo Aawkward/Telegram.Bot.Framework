@@ -12,7 +12,7 @@ namespace Telegram.Bot;
 /// A client interface to use the Telegram Bot API
 /// </summary>
 [PublicAPI]
-public interface ITelegramBotClient
+public interface ITelegramBotClient : IDisposable
 {
     /// <summary>
     /// <see langword="true"/> when the bot is using local Bot API server

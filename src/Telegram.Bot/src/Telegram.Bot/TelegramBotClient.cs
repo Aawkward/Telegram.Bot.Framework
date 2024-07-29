@@ -19,9 +19,13 @@ namespace Telegram.Bot;
 [PublicAPI]
 public class TelegramBotClient : ITelegramBotClient
 {
-    readonly TelegramBotClientOptions _options;
+    private const int attempts = 8;
 
-    readonly HttpClient _httpClient;
+    private const int delay = 250;
+
+    private readonly TelegramBotClientOptions _options;
+
+    private readonly HttpClient _httpClient;
 
     /// <inheritdoc/>
     public long? BotId => _options.BotId;
@@ -88,33 +92,59 @@ public class TelegramBotClient : ITelegramBotClient
     {
         if (request is null) { throw new ArgumentNullException(nameof(request)); }
 
-        var url = $"{_options.BaseRequestUrl}/{request.MethodName}";
+        HttpRequestMessage? httpRequest = default;
+        HttpResponseMessage? httpResponse = default;
+        Exception? exception = default;
 
-#pragma warning disable CA2000
-        var httpRequest = new HttpRequestMessage(method: request.Method, requestUri: url)
+        for (int i = 0; i < attempts; i++)
         {
-            Content = request.ToHttpContent()
-        };
-#pragma warning restore CA2000
+            cancellationToken.ThrowIfCancellationRequested();
 
-        if (OnMakingApiRequest is not null)
-        {
-            var requestEventArgs = new ApiRequestEventArgs(
-                request: request,
-                httpRequestMessage: httpRequest
-            );
-            await OnMakingApiRequest.Invoke(
-                botClient: this,
-                args: requestEventArgs,
-                cancellationToken: cancellationToken
-            ).ConfigureAwait(false);
+            try
+            {
+                var url = $"{_options.BaseRequestUrl}/{request.MethodName}";
+
+                httpRequest = new HttpRequestMessage(method: request.Method, requestUri: url)
+                {
+                    Content = request.ToHttpContent(),
+                };
+
+                if (OnMakingApiRequest is not null)
+                {
+                    var requestEventArgs = new ApiRequestEventArgs(
+                        request: request,
+                        httpRequestMessage: httpRequest
+                    );
+                    await OnMakingApiRequest.Invoke(
+                        botClient: this,
+                        args: requestEventArgs,
+                        cancellationToken: cancellationToken
+                    ).ConfigureAwait(false);
+                }
+
+                httpResponse = await SendRequestAsync(
+                    httpClient: _httpClient,
+                    httpRequest: httpRequest,
+                    cancellationToken: cancellationToken).ConfigureAwait(false);
+
+                exception = null;
+                break;
+            }
+            catch (Exception ex)
+            {
+                httpRequest?.Dispose();
+                httpResponse?.Dispose();
+                exception = ex;
+
+                await Task.Delay(delay, cancellationToken)
+                    .ConfigureAwait(false);
+            }
         }
 
-        using var httpResponse = await SendRequestAsync(
-            httpClient: _httpClient,
-            httpRequest: httpRequest,
-            cancellationToken: cancellationToken
-        ).ConfigureAwait(false);
+        if (exception != null)
+        {
+            throw exception;
+        }
 
         if (OnApiResponseReceived is not null)
         {
@@ -123,7 +153,7 @@ public class TelegramBotClient : ITelegramBotClient
                 httpRequestMessage: httpRequest
             );
             var responseEventArgs = new ApiResponseEventArgs(
-                responseMessage: httpResponse,
+                responseMessage: httpResponse!,
                 apiRequestEventArgs: requestEventArgs
             );
             await OnApiResponseReceived.Invoke(
@@ -133,7 +163,7 @@ public class TelegramBotClient : ITelegramBotClient
             ).ConfigureAwait(false);
         }
 
-        if (httpResponse.StatusCode != HttpStatusCode.OK)
+        if (httpResponse!.StatusCode != HttpStatusCode.OK)
         {
             var failedApiResponse = await httpResponse
                 .DeserializeContentAsync<ApiResponse>(
@@ -154,6 +184,9 @@ public class TelegramBotClient : ITelegramBotClient
             )
             .ConfigureAwait(false);
 
+        httpRequest?.Dispose();
+        httpResponse?.Dispose();
+
         return apiResponse.Result!;
     }
 
@@ -163,50 +196,31 @@ public class TelegramBotClient : ITelegramBotClient
         HttpRequestMessage httpRequest,
         CancellationToken cancellationToken)
     {
-        HttpResponseMessage? httpResponse = default;
-        Exception? ex = default;
-        const int maxAttempts = 20;
-        const int delay = 250;
+        HttpResponseMessage httpResponse;
 
-        for (int i = 0; i < maxAttempts; i++)
+        try
         {
-            try
+            httpResponse = await httpClient
+                .SendAsync(request: httpRequest, cancellationToken: cancellationToken)
+                .ConfigureAwait(continueOnCapturedContext: false);
+        }
+        catch (TaskCanceledException exception)
+        {
+            if (cancellationToken.IsCancellationRequested)
             {
-                httpResponse = await httpClient
-                    .SendAsync(request: httpRequest, cancellationToken: cancellationToken)
-                    .ConfigureAwait(continueOnCapturedContext: false);
-
-                ex = null;
-                break;
+                throw;
             }
-            catch (TaskCanceledException exception)
-            {
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    throw;
-                }
 
-                ex = new RequestException(
-                    message: "Request timed out", innerException: exception);
-
-                break;
-            }
-            catch (Exception exception)
-            {
-                ex = new RequestException(
-                    message: "Exception during making request", innerException: exception);
-
-                await Task.Delay(delay, cancellationToken)
-                    .ConfigureAwait(continueOnCapturedContext: false);
-            }
+            throw new RequestException(
+                message: "Request timed out", innerException: exception);
+        }
+        catch (Exception exception)
+        {
+            throw new RequestException(
+                message: "Exception during making request", innerException: exception);
         }
 
-        if (ex != null)
-        {
-            throw ex;
-        }
-
-        return httpResponse ?? new HttpResponseMessage(HttpStatusCode.InternalServerError);
+        return httpResponse;
     }
 
     /// <summary>
@@ -242,7 +256,7 @@ public class TelegramBotClient : ITelegramBotClient
         if (destination is null) { throw new ArgumentNullException(nameof(destination)); }
 
         var fileUri = $"{_options.BaseFileUrl}/{filePath}";
-        using HttpResponseMessage httpResponse = await GetResponseAsync(
+        using var httpResponse = await GetResponseAsync(
             httpClient: _httpClient,
             fileUri: fileUri,
             cancellationToken: cancellationToken
@@ -291,58 +305,65 @@ public class TelegramBotClient : ITelegramBotClient
         string fileUri,
         CancellationToken cancellationToken)
     {
-        HttpResponseMessage? httpResponse = default;
-        Exception? ex = default;
-        const int maxAttempts = 20;
-        const int delay = 250;
+        HttpResponseMessage httpResponse;
 
-        for (int i = 0; i < maxAttempts; i++)
+        try
         {
-            try
+            httpResponse = await httpClient.GetAsync(
+                requestUri: fileUri,
+                completionOption: HttpCompletionOption.ResponseHeadersRead,
+                cancellationToken: cancellationToken)
+                .ConfigureAwait(continueOnCapturedContext: false);
+        }
+        catch (TaskCanceledException exception)
+        {
+            if (cancellationToken.IsCancellationRequested)
             {
-                httpResponse = await httpClient.GetAsync(
-                    requestUri: fileUri,
-                    completionOption: HttpCompletionOption.ResponseHeadersRead,
-                    cancellationToken: cancellationToken)
-                    .ConfigureAwait(continueOnCapturedContext: false);
-
-                ex = null;
-                break;
+                throw;
             }
-            catch (TaskCanceledException exception)
-            {
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    throw;
-                }
 
-                ex = new RequestException(
-                    message: "Request timed out", innerException: exception);
-
-                break;
-            }
-            catch (Exception exception)
-            {
-                ex = new RequestException(
-                    message: "Exception during file download", innerException: exception);
-
-                await Task.Delay(delay, cancellationToken)
-                    .ConfigureAwait(continueOnCapturedContext: false);
-            }
+            throw new RequestException(
+                message: "Request timed out", innerException: exception);
+        }
+        catch (Exception exception)
+        {
+            throw new RequestException(
+                message: "Exception during file download", innerException: exception);
         }
 
-        if (ex != null)
-        {
-            throw ex;
-        }
-
-        return httpResponse ?? new HttpResponseMessage(HttpStatusCode.InternalServerError);
+        return httpResponse;
     }
 
     #region For testing purposes
 
     internal string BaseRequestUrl => _options.BaseRequestUrl;
     internal string BaseFileUrl => _options.BaseFileUrl;
+
+    #endregion
+
+    #region IDisposable
+
+    private bool _disposed;
+
+    /// <inheritdoc/>
+    public void Dispose()
+    {
+        Dispose(disposing: true);
+        GC.SuppressFinalize(this);
+    }
+
+    private void Dispose(bool disposing)
+    {
+        if (!_disposed)
+        {
+            if (disposing)
+            {
+                _httpClient?.Dispose();
+            }
+
+            _disposed = true;
+        }
+    }
 
     #endregion
 }
