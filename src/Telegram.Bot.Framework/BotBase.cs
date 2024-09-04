@@ -28,10 +28,7 @@ namespace Telegram.Bot.Framework
         {
             get
             {
-                if (_username == null)
-                {
-                    _username = Client.GetMeAsync().GetAwaiter().GetResult().Username;
-                }
+                _username ??= Client.GetMeAsync().GetAwaiter().GetResult().Username;
                 return _username;
             }
             private set
