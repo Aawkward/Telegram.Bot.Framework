@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Telegram.Bot.Framework.Abstractions;
+using Telegram.Bot.Framework.Events;
 
 namespace Telegram.Bot.Framework
 {
@@ -85,16 +86,22 @@ namespace Telegram.Bot.Framework
         }
 
         /// <summary>
+        /// Global event for no handler for update message.
+        /// </summary>
+        public static event NoHandlerForUpdateAsync NoHandlerForUpdateAsync;
+
+        /// <summary>
         /// Builds bot pipeline from added update handlers.
         /// </summary>
         /// <returns>Delegate <see cref="UpdateDelegate"/></returns>
         public UpdateDelegate Build()
         {
-            UpdateDelegate handle = context =>
+            UpdateDelegate handle = async context =>
             {
                 // use Logger
                 Console.WriteLine("No handler for update {0} of type {1}.", context.Update.Id, context.Update.Type);
-                return Task.FromResult(1);
+                await NoHandlerForUpdateAsync?.Invoke(this, context, default);
+                await Task.FromResult(1);
             };
 
             handle = _components.Reverse()
