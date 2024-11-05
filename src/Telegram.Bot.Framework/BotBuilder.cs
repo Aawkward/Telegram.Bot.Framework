@@ -100,7 +100,12 @@ namespace Telegram.Bot.Framework
             {
                 // use Logger
                 Console.WriteLine("No handler for update {0} of type {1}.", context.Update.Id, context.Update.Type);
-                await NoHandlerForUpdateAsync?.Invoke(this, context, default);
+
+                if (NoHandlerForUpdateAsync != null)
+                {
+                    await NoHandlerForUpdateAsync.Invoke(this, context, default);
+                }
+
                 await Task.FromResult(1);
             };
 
