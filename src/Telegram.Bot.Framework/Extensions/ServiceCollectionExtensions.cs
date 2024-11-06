@@ -49,7 +49,7 @@ namespace Telegram.Bot.Framework
             var handlerInterfaceType = typeof(IUpdateHandler);
             var assemblies = AppDomain.CurrentDomain.GetAssemblies();
 
-            foreach (var type in assemblies.SelectMany(i => i.DefinedTypes))
+            foreach (var type in assemblies.SelectMany(i => i.DefinedTypes).OrderByDescending(x => x.Name))
             {
                 if (handlerInterfaceType.IsAssignableFrom(type) &&
                     type.IsClass && !type.IsAbstract)

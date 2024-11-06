@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Telegram.Bot.Framework.Abstractions;
-using Telegram.Bot.Framework.Events;
 
 namespace Telegram.Bot.Framework
 {
@@ -13,7 +12,10 @@ namespace Telegram.Bot.Framework
     public class BotBuilder : IBotBuilder
     {
         internal UpdateDelegate UpdateDelegate { get; private set; }
+
+#pragma warning disable CA1859 // Use concrete types when possible for improved performance
         private readonly ICollection<Func<UpdateDelegate, UpdateDelegate>> _components;
+#pragma warning restore CA1859 // Use concrete types when possible for improved performance
 
         /// <summary>
         /// Creates new instance of <see cref="IBotBuilder"/>
@@ -86,11 +88,6 @@ namespace Telegram.Bot.Framework
         }
 
         /// <summary>
-        /// Global event for no handler for update message.
-        /// </summary>
-        public static event NoHandlerForUpdateAsync NoHandlerForUpdateAsync;
-
-        /// <summary>
         /// Builds bot pipeline from added update handlers.
         /// </summary>
         /// <returns>Delegate <see cref="UpdateDelegate"/></returns>
@@ -100,12 +97,6 @@ namespace Telegram.Bot.Framework
             {
                 // use Logger
                 Console.WriteLine("No handler for update {0} of type {1}.", context.Update.Id, context.Update.Type);
-
-                if (NoHandlerForUpdateAsync != null)
-                {
-                    await NoHandlerForUpdateAsync.Invoke(this, context, default);
-                }
-
                 await Task.FromResult(1);
             };
 
@@ -125,7 +116,7 @@ namespace Telegram.Bot.Framework
             var handlerInterfaceType = typeof(IUpdateHandler);
             var assemblies = AppDomain.CurrentDomain.GetAssemblies();
 
-            foreach (var type in assemblies.SelectMany(i => i.DefinedTypes))
+            foreach (var type in assemblies.SelectMany(i => i.DefinedTypes).OrderByDescending(x => x.Name))
             {
                 if (handlerInterfaceType.IsAssignableFrom(type) &&
                     type.IsClass && !type.IsAbstract)
