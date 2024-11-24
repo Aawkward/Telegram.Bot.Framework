@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Telegram.Bot.Args;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Extensions;
+using Telegram.Bot.Patches;
 using Telegram.Bot.Requests;
 using Telegram.Bot.Requests.Abstractions;
 
@@ -169,11 +170,11 @@ public class TelegramBotClient : ITelegramBotClient
                 .DeserializeContentAsync<ApiResponse>(
                     guard: response =>
                         response.ErrorCode == default ||
-                        // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
                         response.Description is null
                 )
                 .ConfigureAwait(false);
 
+            failedApiResponse = failedApiResponse.IfNotEnoughRights();
             throw ExceptionsParser.Parse(failedApiResponse);
         }
 
