@@ -1,12 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <PackageId>Telegram.Bot.MagicFramework</PackageId>
+    <PackageId>Telegram.Bot.Framework</PackageId>
     <TargetFramework>net8.0</TargetFramework>
     <LangVersion>latest</LangVersion>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-
     <Title>Telegram Bot Framework</Title>
     <Description>Extended verison of telegram bot framework for building powerful Telegram bots 🤖</Description>
     <Authors>Aawkward</Authors>
