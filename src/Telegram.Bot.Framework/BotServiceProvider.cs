@@ -20,14 +20,30 @@ namespace Telegram.Bot.Framework
             _scope = scope;
         }
 
-        public object GetService(Type serviceType) =>
-            _scope != null
-                ? _scope.ServiceProvider.GetService(serviceType)
-                : _container.GetService(serviceType)
-        ;
+        public object GetService(Type serviceType)
+        {
+            if (_scope != null)
+            {
+                return _scope.ServiceProvider.GetService(serviceType);
+            }
+            else if (_container != null)
+            {
+                try
+                {
+                    return _container.GetService(serviceType);
+                }
+                catch
+                {
+                    return _container.CreateScope().ServiceProvider.GetService(serviceType);
+                }
+            }
+            else throw new NullReferenceException("Scope and container are null.");
+        }
 
-        public IBotServiceProvider CreateScope() =>
-            new BotServiceProvider(_container.CreateScope());
+        public IBotServiceProvider CreateScope()
+        {
+            return new BotServiceProvider(_container.CreateScope());
+        }
 
         public void Dispose()
         {
