@@ -28,14 +28,7 @@ namespace Telegram.Bot.Framework
             }
             else if (_container != null)
             {
-                try
-                {
-                    return _container.GetService(serviceType);
-                }
-                catch
-                {
-                    return _container.CreateScope().ServiceProvider.GetService(serviceType);
-                }
+                return _container.CreateScope().ServiceProvider.GetService(serviceType);
             }
             else throw new NullReferenceException("Scope and container are null.");
         }
