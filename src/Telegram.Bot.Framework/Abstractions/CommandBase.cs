@@ -17,17 +17,19 @@ namespace Telegram.Bot.Framework.Abstractions
         #region Fields
 
         private readonly string _commandName;
+        private readonly bool _enabled;
 
         #endregion
         
         #region Ctor
 
-        protected CommandBase(string commandName)
+        protected CommandBase(string commandName, bool enabled = true)
         {
             if (commandName.StartsWith("/"))
                 throw new ArgumentException("Command name must not start with '/'.", nameof(commandName));
             
             _commandName = commandName;
+            _enabled = enabled;
         }
 
         #endregion
@@ -48,7 +50,7 @@ namespace Telegram.Bot.Framework.Abstractions
         /// </summary>
         /// <param name="context">Update context</param>
         /// <returns>True if method can handle.</returns>
-        protected virtual bool CanHandleCommand(IUpdateContext context) => true;
+        protected virtual bool CanHandleCommand(IUpdateContext context) => _enabled;
         
         /// <summary>
         /// Determines command can be handled.
