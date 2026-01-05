@@ -133,7 +133,6 @@ public class TelegramBotClient : ITelegramBotClient
             }
             catch (Exception ex)
             {
-                httpRequest?.Dispose();
                 httpResponse?.Dispose();
                 exception = ex;
 
@@ -144,6 +143,7 @@ public class TelegramBotClient : ITelegramBotClient
 
         if (exception != null)
         {
+            httpRequest?.Dispose();
             throw exception;
         }
 
