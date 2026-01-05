@@ -1,5 +1,6 @@
 using System.IO;
 using Telegram.Bot.Types.Enums;
+using Telegram.Bot.Types.Internal;
 
 // ReSharper disable once CheckNamespace
 namespace Telegram.Bot.Types;
@@ -29,6 +30,11 @@ public class InputFileStream : InputFile
     /// </summary>
     /// <param name="content">File content to upload</param>
     /// <param name="fileName">Name of a file to upload using multipart/form-data</param>
-    public InputFileStream(Stream content, string? fileName = default) =>
-        (Content, FileName) = (content, fileName);
+    public InputFileStream(Stream content, string? fileName = default)
+    {
+        Content = new NonDisposableStream(content);
+        FileName = fileName;
+    }
+    //public InputFileStream(Stream content, string? fileName = default) =>
+    //    (Content, FileName) = (content, fileName);
 }
