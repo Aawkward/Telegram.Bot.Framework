@@ -134,6 +134,7 @@ public class TelegramBotClient : ITelegramBotClient
             catch (Exception ex)
             {
                 httpResponse?.Dispose();
+                httpRequest?.Dispose();
                 exception = ex;
 
                 await Task.Delay(delay, cancellationToken)
@@ -143,7 +144,6 @@ public class TelegramBotClient : ITelegramBotClient
 
         if (exception != null)
         {
-            httpRequest?.Dispose();
             throw exception;
         }
 
