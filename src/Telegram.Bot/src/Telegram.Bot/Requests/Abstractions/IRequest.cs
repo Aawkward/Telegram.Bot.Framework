@@ -1,4 +1,4 @@
-﻿using System.Net.Http;
+using System.Net.Http;
 
 // ReSharper disable once UnusedTypeParameter
 namespace Telegram.Bot.Requests.Abstractions;
@@ -28,4 +28,9 @@ public interface IRequest
     /// </summary>
     /// <returns>Content of HTTP request</returns>
     HttpContent? ToHttpContent();
+
+    /// <summary>
+    /// Reset request in the context.
+    /// </summary>
+    void Reset();
 }

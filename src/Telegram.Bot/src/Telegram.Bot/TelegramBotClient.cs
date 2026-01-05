@@ -24,6 +24,8 @@ public class TelegramBotClient : ITelegramBotClient
 
     private const int delay = 250;
 
+    private const int timeout = 360;
+
     private readonly TelegramBotClientOptions _options;
 
     private readonly HttpClient _httpClient;
@@ -69,7 +71,7 @@ public class TelegramBotClient : ITelegramBotClient
         HttpClient? httpClient = default)
     {
         _options = options ?? throw new ArgumentNullException(nameof(options));
-        _httpClient = httpClient ?? new HttpClient();
+        _httpClient = httpClient ?? new HttpClient { Timeout = new TimeSpan(0, 0, timeout) };
     }
 
     /// <summary>
@@ -135,6 +137,7 @@ public class TelegramBotClient : ITelegramBotClient
             {
                 httpRequest?.Dispose();
                 httpResponse?.Dispose();
+                request.Reset();
 
                 exception = ex;
 
