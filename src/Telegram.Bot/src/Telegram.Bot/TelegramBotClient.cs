@@ -1,4 +1,5 @@
 using JetBrains.Annotations;
+using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Http;
@@ -23,8 +24,6 @@ public class TelegramBotClient : ITelegramBotClient
     private const int attempts = 8;
 
     private const int delay = 250;
-
-    private const int timeout = 360;
 
     private readonly TelegramBotClientOptions _options;
 
@@ -71,7 +70,7 @@ public class TelegramBotClient : ITelegramBotClient
         HttpClient? httpClient = default)
     {
         _options = options ?? throw new ArgumentNullException(nameof(options));
-        _httpClient = httpClient ?? new HttpClient { Timeout = new TimeSpan(0, 0, timeout) };
+        _httpClient = httpClient ?? new HttpClient();
     }
 
     /// <summary>
@@ -95,9 +94,9 @@ public class TelegramBotClient : ITelegramBotClient
     {
         if (request is null) { throw new ArgumentNullException(nameof(request)); }
 
-        HttpRequestMessage? httpRequest = default;
-        HttpResponseMessage? httpResponse = default;
-        Exception? exception = default;
+        var httpRequests = new List<HttpRequestMessage>();
+        var httpResponse = default(HttpResponseMessage?);
+        var exception = default(Exception?);
 
         for (int i = 0; i < attempts; i++)
         {
@@ -107,10 +106,11 @@ public class TelegramBotClient : ITelegramBotClient
             {
                 var url = $"{_options.BaseRequestUrl}/{request.MethodName}";
 
-                httpRequest = new HttpRequestMessage(method: request.Method, requestUri: url)
+                var httpRequest = new HttpRequestMessage(method: request.Method, requestUri: url)
                 {
                     Content = request.ToHttpContent(),
                 };
+                httpRequests.Add(httpRequest);
 
                 if (OnMakingApiRequest is not null)
                 {
@@ -135,7 +135,6 @@ public class TelegramBotClient : ITelegramBotClient
             }
             catch (Exception ex)
             {
-                httpRequest?.Dispose();
                 httpResponse?.Dispose();
                 request.Reset();
 
@@ -146,53 +145,62 @@ public class TelegramBotClient : ITelegramBotClient
             }
         }
 
-        if (exception != null)
+        try
         {
-            throw exception;
-        }
+            if (exception != null)
+            {
+                throw exception;
+            }
 
-        if (OnApiResponseReceived is not null)
-        {
-            var requestEventArgs = new ApiRequestEventArgs(
-                request: request,
-                httpRequestMessage: httpRequest
-            );
-            var responseEventArgs = new ApiResponseEventArgs(
-                responseMessage: httpResponse!,
-                apiRequestEventArgs: requestEventArgs
-            );
-            await OnApiResponseReceived.Invoke(
-                botClient: this,
-                args: responseEventArgs,
-                cancellationToken: cancellationToken
-            ).ConfigureAwait(false);
-        }
+            if (OnApiResponseReceived is not null)
+            {
+                var requestEventArgs = new ApiRequestEventArgs(
+                    request: request,
+                    httpRequestMessage: httpRequests[httpRequests.Count - 1]
+                );
+                var responseEventArgs = new ApiResponseEventArgs(
+                    responseMessage: httpResponse!,
+                    apiRequestEventArgs: requestEventArgs
+                );
+                await OnApiResponseReceived.Invoke(
+                    botClient: this,
+                    args: responseEventArgs,
+                    cancellationToken: cancellationToken
+                ).ConfigureAwait(false);
+            }
 
-        if (httpResponse!.StatusCode != HttpStatusCode.OK)
-        {
-            var failedApiResponse = await httpResponse
-                .DeserializeContentAsync<ApiResponse>(
-                    guard: response =>
-                        response.ErrorCode == default ||
-                        response.Description is null
+            if (httpResponse!.StatusCode != HttpStatusCode.OK)
+            {
+                var failedApiResponse = await httpResponse
+                    .DeserializeContentAsync<ApiResponse>(
+                        guard: response =>
+                            response.ErrorCode == default ||
+                            response.Description is null
+                    )
+                    .ConfigureAwait(false);
+
+                failedApiResponse = failedApiResponse.IfNotEnoughRights();
+                throw ExceptionsParser.Parse(failedApiResponse);
+            }
+
+            var apiResponse = await httpResponse
+                .DeserializeContentAsync<ApiResponse<TResponse>>(
+                    guard: response => response.Ok == false ||
+                                       response.Result is null
                 )
                 .ConfigureAwait(false);
 
-            failedApiResponse = failedApiResponse.IfNotEnoughRights();
-            throw ExceptionsParser.Parse(failedApiResponse);
+            return apiResponse.Result!;
         }
+        finally
+        {
+            httpResponse?.Dispose();
 
-        var apiResponse = await httpResponse
-            .DeserializeContentAsync<ApiResponse<TResponse>>(
-                guard: response => response.Ok == false ||
-                                   response.Result is null
-            )
-            .ConfigureAwait(false);
-
-        httpRequest?.Dispose();
-        httpResponse?.Dispose();
-
-        return apiResponse.Result!;
+            foreach (var httpRequest in httpRequests)
+            {
+                httpRequest?.Dispose();
+            }
+        }
     }
 
     [MethodImpl(methodImplOptions: MethodImplOptions.AggressiveInlining)]
