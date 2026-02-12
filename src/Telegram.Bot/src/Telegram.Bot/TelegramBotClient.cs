@@ -21,9 +21,11 @@ namespace Telegram.Bot;
 [PublicAPI]
 public class TelegramBotClient : ITelegramBotClient
 {
-    private const int attempts = 8;
+    private const int attempts = 16;
 
     private const int delay = 250;
+
+    private const int timeout = 180;
 
     private readonly TelegramBotClientOptions _options;
 
@@ -70,7 +72,7 @@ public class TelegramBotClient : ITelegramBotClient
         HttpClient? httpClient = default)
     {
         _options = options ?? throw new ArgumentNullException(nameof(options));
-        _httpClient = httpClient ?? new HttpClient();
+        _httpClient = httpClient ?? new HttpClient() { Timeout = new TimeSpan(0, 0, timeout)};
     }
 
     /// <summary>
