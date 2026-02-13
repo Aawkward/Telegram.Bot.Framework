@@ -21,11 +21,11 @@ namespace Telegram.Bot;
 [PublicAPI]
 public class TelegramBotClient : ITelegramBotClient
 {
-    private const int attempts = 16;
+    private const int attempts = 8;
 
     private const int delay = 250;
 
-    private const int timeout = 180;
+    private const int timeout = 360;
 
     private readonly TelegramBotClientOptions _options;
 
