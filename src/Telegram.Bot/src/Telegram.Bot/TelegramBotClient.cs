@@ -25,7 +25,7 @@ public class TelegramBotClient : ITelegramBotClient
 
     private const int delay = 250;
 
-    private const int timeout = 360;
+    private const int timeout = 720;
 
     private readonly TelegramBotClientOptions _options;
 
