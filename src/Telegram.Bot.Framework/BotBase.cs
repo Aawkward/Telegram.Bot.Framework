@@ -12,14 +12,15 @@ namespace Telegram.Bot.Framework
             Client = client;
         }
 
-        protected BotBase(string username, string token)
-            : this(username, new TelegramBotClient(token))
-        {
-        }
-
         protected BotBase(BotOptions options)
-            : this(options.Username, new TelegramBotClient(options.ApiToken))
         {
+            Username = options.Username;
+            Client = new TelegramBotClient(
+                new TelegramBotClientOptions(options.ApiToken)
+                {
+                    UseProxy = options.UseProxy,
+                    ProxySettings = options.ProxySettings,
+                });
         }
 
         public ITelegramBotClient Client { get; }

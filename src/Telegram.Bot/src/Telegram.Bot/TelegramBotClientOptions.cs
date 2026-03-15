@@ -52,6 +52,16 @@ public class TelegramBotClientOptions
     public string BaseRequestUrl { get; }
 
     /// <summary>
+    /// Use proxy or not.
+    /// </summary>
+    public bool UseProxy { get; set; }
+
+    /// <summary>
+    /// Proxy settings.
+    /// </summary>
+    public ProxySettings ProxySettings { get; set; }
+
+    /// <summary>
     /// Create a new <see cref="TelegramBotClientOptions"/> instance.
     /// </summary>
     /// <param name="token">API token</param>

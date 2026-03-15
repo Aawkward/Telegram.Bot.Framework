@@ -30,7 +30,7 @@ public interface ITelegramBotClient : IDisposable
     /// <summary>
     /// Timeout for requests
     /// </summary>
-    TimeSpan Timeout { get; set; }
+    TimeSpan Timeout { get; }
 
     /// <summary>
     /// Instance of <see cref="IExceptionParser"/> to parse errors from Bot API into

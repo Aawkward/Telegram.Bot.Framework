@@ -29,6 +29,8 @@ public class TelegramBotClient : ITelegramBotClient
 
     private readonly TelegramBotClientOptions _options;
 
+    private readonly HttpClientHandler _httpClientHandler;
+
     private readonly HttpClient _httpClient;
 
     /// <inheritdoc/>
@@ -43,7 +45,6 @@ public class TelegramBotClient : ITelegramBotClient
     public TimeSpan Timeout
     {
         get => _httpClient.Timeout;
-        set => _httpClient.Timeout = value;
     }
 
     /// <inheritdoc />
@@ -63,31 +64,28 @@ public class TelegramBotClient : ITelegramBotClient
     /// Create a new <see cref="TelegramBotClient"/> instance.
     /// </summary>
     /// <param name="options">Configuration for <see cref="TelegramBotClient" /></param>
-    /// <param name="httpClient">A custom <see cref="HttpClient"/></param>
     /// <exception cref="ArgumentNullException">
     /// Thrown if <paramref name="options"/> is <c>null</c>
     /// </exception>
     public TelegramBotClient(
-        TelegramBotClientOptions options,
-        HttpClient? httpClient = default)
+        TelegramBotClientOptions options)
     {
         _options = options ?? throw new ArgumentNullException(nameof(options));
-        _httpClient = httpClient ?? new HttpClient() { Timeout = new TimeSpan(0, 0, timeout)};
-    }
 
-    /// <summary>
-    /// Create a new <see cref="TelegramBotClient"/> instance.
-    /// </summary>
-    /// <param name="token"></param>
-    /// <param name="httpClient">A custom <see cref="HttpClient"/></param>
-    /// <exception cref="ArgumentException">
-    /// Thrown if <paramref name="token"/> format is invalid
-    /// </exception>
-    public TelegramBotClient(
-        string token,
-        HttpClient? httpClient = null) :
-        this(new TelegramBotClientOptions(token), httpClient)
-    { }
+        var proxySettings = options.ProxySettings;
+        _httpClientHandler = new HttpClientHandler();
+
+        if (proxySettings != null)
+        {
+            var proxy = new WebProxy(proxySettings.Host, proxySettings.Port)
+            {
+                Credentials = new NetworkCredential(proxySettings.Login, proxySettings.Password),
+            };
+            _httpClientHandler.UseProxy = options.UseProxy;
+            _httpClientHandler.Proxy = proxy;
+        }
+        _httpClient = new HttpClient(_httpClientHandler) { Timeout = new TimeSpan(0, 0, timeout)};
+    }
 
     /// <inheritdoc />
     public virtual async Task<TResponse> MakeRequestAsync<TResponse>(
@@ -373,6 +371,7 @@ public class TelegramBotClient : ITelegramBotClient
         {
             if (disposing)
             {
+                _httpClientHandler?.Dispose();
                 _httpClient?.Dispose();
             }
 

@@ -19,5 +19,15 @@
         /// URL path to webhook address.
         /// </summary>
         public string WebhookPath { get; set; }
+
+        /// <summary>
+        /// Use proxy or not.
+        /// </summary>
+        public bool UseProxy { get; set; }
+
+        /// <summary>
+        /// Proxy settings.
+        /// </summary>
+        public ProxySettings ProxySettings { get; set; }
     }
 }
