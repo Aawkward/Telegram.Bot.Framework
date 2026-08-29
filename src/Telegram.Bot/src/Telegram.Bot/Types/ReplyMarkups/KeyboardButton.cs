@@ -1,3 +1,5 @@
+using Telegram.Bot.Types.Enums;
+
 namespace Telegram.Bot.Types.ReplyMarkups;
 
 /// <summary>
@@ -24,6 +26,19 @@ public class KeyboardButton : IKeyboardButton
     /// <inheritdoc />
     [JsonProperty(Required = Required.Always)]
     public string Text { get; set; }
+
+    /// <summary>
+    /// Optional. Unique identifier of the custom emoji shown before the button text.
+    /// Can only be used by bots that are allowed to use custom emoji.
+    /// </summary>
+    [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
+    public string? IconCustomEmojiId { get; set; }
+
+    /// <summary>
+    /// Optional. Visual style of the button. If omitted, an app-specific style is used.
+    /// </summary>
+    [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
+    public KeyboardButtonStyle? Style { get; set; }
 
     /// <summary>
     /// Optional. If specified, pressing the button will open a list of suitable users. Tapping on any user will send
