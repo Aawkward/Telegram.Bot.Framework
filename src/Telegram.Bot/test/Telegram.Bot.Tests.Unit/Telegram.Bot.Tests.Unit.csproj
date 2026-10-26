@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <LangVersion>11</LangVersion>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
@@ -16,5 +16,9 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Telegram.Bot\Telegram.Bot.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Async-enumerable receivers are not included in the library's netstandard2.0 target. -->
+    <Compile Remove="Polling\AsyncEnumerableReceivers\**\*.cs" />
   </ItemGroup>
 </Project>

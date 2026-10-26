@@ -21,7 +21,7 @@ public class BotIdTests
     public void Should_Throw_On_Null_Token()
     {
         ArgumentNullException exception = Assert.Throws<ArgumentNullException>(
-            () => new TelegramBotClient(token: null!)
+            () => new TelegramBotClientOptions(token: null!)
         );
         Assert.Equal("token", exception.ParamName);
     }
