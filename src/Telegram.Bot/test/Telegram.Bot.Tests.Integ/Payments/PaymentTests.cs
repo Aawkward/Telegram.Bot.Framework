@@ -581,8 +581,8 @@ public class PaymentTests : IClassFixture<PaymentFixture>, IAsyncLifetime
     async Task<Update> GetShippingQueryUpdate(CancellationToken cancellationToken = default)
     {
         Update[] updates = await _fixture.UpdateReceiver.GetUpdatesAsync(
-            cancellationToken: cancellationToken,
-            updateTypes: UpdateType.ShippingQuery
+            updateTypes: UpdateType.ShippingQuery,
+            cancellationToken: cancellationToken
         );
 
         Update update = updates.Single();
@@ -595,8 +595,8 @@ public class PaymentTests : IClassFixture<PaymentFixture>, IAsyncLifetime
     async Task<Update> GetPreCheckoutQueryUpdate(CancellationToken cancellationToken = default)
     {
         Update[] updates = await _fixture.UpdateReceiver.GetUpdatesAsync(
-            cancellationToken: cancellationToken,
-            updateTypes: UpdateType.PreCheckoutQuery);
+            updateTypes: UpdateType.PreCheckoutQuery,
+            cancellationToken: cancellationToken);
 
         Update update = updates.Single();
 
@@ -609,8 +609,8 @@ public class PaymentTests : IClassFixture<PaymentFixture>, IAsyncLifetime
     {
         Update[] updates = await _fixture.UpdateReceiver.GetUpdatesAsync(
             predicate: u => u.Message?.Type == MessageType.SuccessfulPayment,
-            cancellationToken: cancellationToken,
-            updateTypes: UpdateType.Message
+            updateTypes: UpdateType.Message,
+            cancellationToken: cancellationToken
         );
 
         Update update = updates.Single();

@@ -186,15 +186,15 @@ public class UpdateReceiver
         Update? messageUpdate = default;
         Update? chosenResultUpdate = default;
 
-        while (ShouldContinue(cancellationToken, (messageUpdate, chosenResultUpdate)))
+        while (ShouldContinue((messageUpdate, chosenResultUpdate), cancellationToken))
         {
             await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
             var updates = await GetUpdatesAsync(
                 predicate: u => (u.Message is { Chat.Id: var id, Type: var type } &&
                                  id == chatId && type == messageType) ||
                                 u.ChosenInlineResult is not null,
-                cancellationToken: cancellationToken,
-                updateTypes: new[] { UpdateType.Message, UpdateType.ChosenInlineResult }
+                updateTypes: new[] { UpdateType.Message, UpdateType.ChosenInlineResult },
+                cancellationToken: cancellationToken
             );
 
             messageUpdate = updates.SingleOrDefault(u => u.Message?.Type == messageType);
@@ -206,8 +206,8 @@ public class UpdateReceiver
         return (messageUpdate!, chosenResultUpdate!);
 
         static bool ShouldContinue(
-            CancellationToken cancellationToken,
-            (Update? update1, Update? update2) updates
+            (Update? update1, Update? update2) updates,
+            CancellationToken cancellationToken
         ) =>
             !cancellationToken.IsCancellationRequested && updates is not ({}, {});
     }
